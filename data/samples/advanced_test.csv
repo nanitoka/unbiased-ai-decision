@@ -1,0 +1,15 @@
+gender,race,approved,label
+M,white,1,1
+M,white,1,1
+M,black,0,1
+M,black,1,1
+F,white,1,1
+F,white,0,1
+F,black,0,1
+F,black,1,0
+M,white,1,1
+F,white,0,1
+M,black,1,1
+F,black,0,1
+M,white,1,0
+F,black,0,0

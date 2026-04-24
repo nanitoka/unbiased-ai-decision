@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BiasGuard AI | Because unfair AI is broken AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #000;
+            color: #fff;
+            scroll-behavior: smooth;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #60a5fa 0%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-glow {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .btn-glow:hover { transform: scale(1.05); box-shadow: 0 0 40px rgba(59, 130, 246, 0.6); }
+
+        .reveal { opacity: 0; transform: translateY(40px); transition: all 1s ease-out; }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+
+        .typewriter {
+            overflow: hidden;
+            border-right: .15em solid #60a5fa;
+            white-space: nowrap;
+            margin: 0 auto;
+            letter-spacing: .15em;
+            animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+        }
+
+        @keyframes typing { from { width: 0 } to { width: 100% } }
+        @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: #60a5fa; } }
+
+        .particle-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.3; }
+        
+        .story-step { display: none; }
+        .story-step.active { display: block; animation: fadeIn 0.8s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .hero-title-gradient {
+            background: linear-gradient(to right, #ffffff 20%, #f43f5e 50%, #ffffff 80%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 5s linear infinite;
+        }
+        @keyframes shine { to { background-position: 200% center; } }
+
+        .slide-left { opacity: 0; transform: translateX(-100px); animation: slideLeft 1.2s cubic-bezier(0.23, 1, 0.32, 1) forwards; }
+        .fade-scale { opacity: 0; transform: scale(0.9) translateX(50px); animation: fadeScale 1.5s cubic-bezier(0.23, 1, 0.32, 1) forwards; }
+        
+        @keyframes slideLeft { to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeScale { to { opacity: 0.85; transform: scale(1) translateX(0); } }
+
+        .glow-pulse { animation: glowPulse 3s ease-in-out infinite; }
+        @keyframes glowPulse { 0%, 100% { filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.2)); } 50% { filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.5)); } }
+    </style>
+</head>
+<body class="bg-[#020617]">
+    <canvas id="particle-canvas" class="particle-bg"></canvas>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass py-4 px-10 flex justify-between items-center border-b border-white/5">
+        <div class="flex items-center space-x-3">
+            <i data-lucide="shield-check" class="text-blue-400 w-8 h-8"></i>
+            <span class="text-2xl font-black tracking-tighter">BiasGuard <span class="text-blue-400">AI</span></span>
+        </div>
+        <div class="hidden md:flex space-x-10 text-xs font-bold uppercase tracking-widest text-slate-400">
+            <a href="#problem" class="hover:text-white transition-colors">Problem</a>
+            <a href="#impact" class="hover:text-white transition-colors">Impact</a>
+            <a href="#demo" class="hover:text-white transition-colors">Studio</a>
+            <a href="/history" class="hover:text-white transition-colors">History</a>
+        </div>
+        <div class="flex items-center space-x-6">
+            {% if session.get('user_id') %}
+                <div class="flex items-center space-x-4">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active Auditor</p>
+                        <p class="text-xs font-black text-blue-400">{{ session.get('user_name') }}</p>
+                    </div>
+                    <a href="/logout" class="p-2 glass rounded-lg hover:bg-rose-500/10 hover:text-rose-500 transition-all">
+                        <i data-lucide="log-out" class="w-4 h-4 text-slate-400 hover:text-rose-500"></i>
+                    </a>
+                </div>
+                <a href="/history" class="btn-glow px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest">Dashboard</a>
+            {% else %}
+                <a href="/login" class="flex items-center space-x-2 text-sm font-bold hover:text-blue-400 transition-colors">
+                    <i data-lucide="user" class="w-4 h-4"></i>
+                    <span>Sign In</span>
+                </a>
+                <a href="/signup" class="btn-glow px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest">Join Platform</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="min-h-screen flex items-center justify-center px-10 pt-20 overflow-hidden bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/10 via-black to-black">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <!-- Text Content -->
+            <div class="space-y-10 z-10">
+                <div class="slide-left inline-block p-3 bg-blue-500/10 rounded-2xl border border-blue-500/20" style="animation-delay: 0.2s">
+                    <span class="text-blue-400 text-xs font-black uppercase tracking-[0.4em]">Audit Studio v4.0</span>
+                </div>
+                <h1 class="slide-left text-6xl md:text-8xl font-black tracking-tightest leading-[0.9]" style="animation-delay: 0.4s">
+                    The Algorithm Is <span class="text-rose-500 glow-pulse">Biased.</span><br/>
+                    Your Future <span class="hero-title-gradient">Doesn't</span> Have To Be.
+                </h1>
+                <p class="slide-left text-slate-400 text-xl md:text-2xl leading-relaxed max-w-xl" style="animation-delay: 0.6s">
+                    Erase the automated inequities of the past. Protect your users, your brand, and our shared <span class="text-white font-bold">digital conscience</span>.
+                </p>
+                <div class="slide-left flex space-x-6" style="animation-delay: 0.8s">
+                    <a href="#demo" class="btn-glow px-10 py-5 rounded-[32px] font-black text-xl flex items-center space-x-4">
+                        <span>Initiate Audit</span>
+                        <i data-lucide="zap" class="w-6 h-6"></i>
+                    </a>
+                    <a href="#impact" class="glass px-10 py-5 rounded-[32px] font-black text-xl border-white/5 opacity-60 hover:opacity-100 transition-opacity">Keynote</a>
+                </div>
+            </div>
+
+            <!-- Cinematic Visual -->
+            <div class="fade-scale relative flex justify-center items-center" style="animation-delay: 0.5s">
+                <div class="absolute inset-0 bg-blue-500/10 blur-[150px] rounded-full animate-pulse"></div>
+                <img src="{{ url_for('static', filename='img/hero_visual.png') }}" 
+                     class="relative z-10 w-full max-w-[650px] rounded-[60px] border border-white/10 shadow-2xl glow-pulse float-anim" 
+                     alt="AI Fairness Visual Illustration" />
+            </div>
+        </div>
+    </header>
+
+    <style>
+        html { scroll-behavior: smooth; scroll-padding-top: 100px; }
+        .impact-card:hover img { transform: scale(1.08) translateY(-10px); opacity: 1; filter: brightness(1.2) saturate(1.2); }
+        .impact-card:hover { transform: translateY(-15px); border-color: rgba(255,255,255,0.2) !important; box-shadow: 0 40px 80px -20px rgba(0,0,0,0.8); }
+        .impact-card { transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
+        .impact-img { transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1); }
+        .blue-glow:hover { box-shadow: 0 0 50px -10px rgba(59, 130, 246, 0.3); }
+        .purple-glow:hover { box-shadow: 0 0 50px -10px rgba(139, 92, 246, 0.3); }
+        .emerald-glow:hover { box-shadow: 0 0 50px -10px rgba(16, 185, 129, 0.3); }
+        .rose-glow:hover { box-shadow: 0 0 50px -10px rgba(244, 63, 94, 0.3); }
+    </style>
+
+    <!-- Impact Section -->
+    <section id="impact" class="min-h-screen py-40 px-10 max-w-7xl mx-auto space-y-24">
+        <div class="text-center space-y-4">
+            <h2 class="text-7xl font-black tracking-tightest">Quantifiable <span class="text-blue-400">Impact.</span></h2>
+            <p class="text-slate-500 text-xl font-medium uppercase tracking-[0.4em]">Forensic Integrity at Global Scale</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <!-- Card 1 -->
+            <div class="impact-card blue-glow glass p-12 rounded-[60px] space-y-8 reveal hover:border-blue-500/30">
+                <div class="flex justify-between items-start">
+                    <div class="w-16 h-16 bg-blue-500/10 rounded-3xl flex items-center justify-center">
+                        <i data-lucide="eye" class="text-blue-400 w-8 h-8"></i>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="text-3xl font-black">Forensic Transparency</h3>
+                    <p class="text-slate-400 leading-relaxed text-lg">
+                        Provides <b class="text-white">100% visibility</b> into demographic parity. We implement the "Four-Fifths Rule" and Disparate Impact monitoring to ensure every decision vector is vetted for systemic equity.
+                    </p>
+                </div>
+                <div class="overflow-hidden rounded-[32px]">
+                    <img src="{{ url_for('static', filename='img/transparency_visual.png') }}" class="impact-img w-full h-56 object-cover opacity-60" alt="Transparency Visual">
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="impact-card purple-glow glass p-12 rounded-[60px] space-y-8 reveal hover:border-purple-500/30" style="transition-delay: 0.2s">
+                <div class="flex justify-between items-start">
+                    <div class="w-16 h-16 bg-purple-500/10 rounded-3xl flex items-center justify-center">
+                        <i data-lucide="message-square-quote" class="text-purple-400 w-8 h-8"></i>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="text-3xl font-black">Narrative Intelligence</h3>
+                    <p class="text-slate-400 leading-relaxed text-lg">
+                        Powered by <b class="text-white">Google Vertex AI (Gemini 1.5)</b>. We don't just show numbers; we translate raw statistical logs into human-readable storytelling that explains the "Why" behind the bias.
+                    </p>
+                </div>
+                <div class="overflow-hidden rounded-[32px]">
+                    <img src="{{ url_for('static', filename='img/heartbeat_visual.png') }}" class="impact-img w-full h-56 object-cover opacity-60" alt="Narrative Intelligence Visual">
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="impact-card emerald-glow glass p-12 rounded-[60px] space-y-8 reveal hover:border-emerald-500/30" style="transition-delay: 0.4s">
+                <div class="flex justify-between items-start">
+                    <div class="w-16 h-16 bg-emerald-500/10 rounded-3xl flex items-center justify-center">
+                        <i data-lucide="cloud" class="text-emerald-400 w-8 h-8"></i>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="text-3xl font-black">Enterprise Durability</h3>
+                    <p class="text-slate-400 leading-relaxed text-lg">
+                        Architected for the cloud. All audit logs are synchronized to <b class="text-white">Google Cloud Storage</b> buckets, ensuring immutable forensic trails and high-availability persistence for global audit teams.
+                    </p>
+                </div>
+                <div class="overflow-hidden rounded-[32px]">
+                    <img src="{{ url_for('static', filename='img/crisis_visual.png') }}" class="impact-img w-full h-56 object-cover opacity-60" alt="Enterprise Durability Visual">
+                </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="impact-card rose-glow glass p-12 rounded-[60px] space-y-8 reveal hover:border-rose-500/30" style="transition-delay: 0.6s">
+                <div class="flex justify-between items-start">
+                    <div class="w-16 h-16 bg-rose-500/10 rounded-3xl flex items-center justify-center">
+                        <i data-lucide="globe" class="text-rose-400 w-8 h-8"></i>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="text-3xl font-black">Societal Alignment</h3>
+                    <p class="text-slate-400 leading-relaxed text-lg">
+                        Directly addresses <b class="text-white">UN SDGs 5 (Gender Equality)</b> and <b class="text-white">10 (Reduced Inequality)</b>. BiasGuard AI isn't just software—it's a digital conscience for the next generation of AI developers.
+                    </p>
+                </div>
+                <div class="overflow-hidden rounded-[32px]">
+                    <img src="{{ url_for('static', filename='img/global_visual.png') }}" class="impact-img w-full h-56 object-cover opacity-60" alt="Global Impact Visual">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem & Impact Sections -->
+    <!-- Problem Section -->
+    <section id="problem" class="max-w-7xl mx-auto py-60 px-10 grid grid-cols-1 lg:grid-cols-2 gap-32 items-center">
+        <div class="space-y-12 reveal">
+            <div class="space-y-6">
+                <div class="flex items-center space-x-3 text-rose-500 font-bold uppercase tracking-widest text-sm">
+                    <span class="w-12 h-[2px] bg-rose-500"></span>
+                    <span>The Crisis in Digital Logic</span>
+                </div>
+                <h2 class="text-7xl font-black leading-tight tracking-tightest">Historical bias is being <br/><span class="text-rose-500 italic">automated at scale.</span></h2>
+            </div>
+            
+            <p class="text-slate-400 text-xl leading-relaxed max-w-xl">
+                When algorithms inherit the prejudices of the past, they don't just repeat them—they institutionalize them. This creates a feedback loop of systemic inequity.
+            </p>
+
+            <div class="space-y-6">
+                <!-- Bullet 1 -->
+                <div class="flex items-start space-x-6 glass p-6 rounded-3xl border-rose-500/10 hover:border-rose-500/30 transition-all duration-500 group">
+                    <div class="w-12 h-12 bg-rose-500/10 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <i data-lucide="briefcase" class="text-rose-500 w-6 h-6"></i>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="text-lg font-black text-white">Sexist Hiring Algorithms</h4>
+                        <p class="text-sm text-slate-500 leading-relaxed">Preferring specific backgrounds based on decades of legacy male-dominated resumes, locking out talent.</p>
+                    </div>
+                </div>
+
+                <!-- Bullet 2 -->
+                <div class="flex items-start space-x-6 glass p-6 rounded-3xl border-rose-500/10 hover:border-rose-500/30 transition-all duration-500 group" style="transition-delay: 0.1s">
+                    <div class="w-12 h-12 bg-rose-500/10 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <i data-lucide="landmark" class="text-rose-500 w-6 h-6"></i>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="text-lg font-black text-white">Financial Redlining</h4>
+                        <p class="text-sm text-slate-500 leading-relaxed">Denying essential loans to underserved communities due to profile-based zip code discrimination and flawed credit models.</p>
+                    </div>
+                </div>
+
+                <!-- Bullet 3 -->
+                <div class="flex items-start space-x-6 glass p-6 rounded-3xl border-rose-500/10 hover:border-rose-500/30 transition-all duration-500 group" style="transition-delay: 0.2s">
+                    <div class="w-12 h-12 bg-rose-500/10 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <i data-lucide="heart-pulse" class="text-rose-500 w-6 h-6"></i>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="text-lg font-black text-white">Medical Diagnostic Gaps</h4>
+                        <p class="text-sm text-slate-500 leading-relaxed">Under-representing diverse demographics in training sets, leading to lethal misdiagnoses for protected groups.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="relative max-w-xl mx-auto reveal" style="transition-delay: 0.4s">
+            <div class="absolute -inset-10 bg-rose-600/10 blur-[120px] rounded-full animate-pulse"></div>
+            <img src="{{ url_for('static', filename='img/crisis_visual.png') }}" class="relative z-10 rounded-[60px] border border-white/10 shadow-2xl scale-x-[-1] skew-y-2 hover:skew-y-0 transition-transform duration-1000" alt="The AI Bias Crisis">
+        </div>
+    </section>
+
+    <!-- Live Audit Studio (The Product) -->
+    <section id="demo" class="max-w-7xl mx-auto py-40 px-10">
+        <div class="text-center space-y-4 mb-20 reveal">
+            <h2 class="text-6xl font-black">BiasGuard <span class="gradient-text">Studio</span></h2>
+            <p class="text-slate-500 italic max-w-2xl mx-auto">Upload your model's decision logs to generate a high-fidelity fairness report.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            <!-- Sidebar / History -->
+            <div class="lg:col-span-4 space-y-8 reveal">
+                <div class="glass p-10 rounded-[40px] space-y-8 border-white/10">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xs font-bold uppercase text-slate-500 tracking-widest">Audit Registry</h4>
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                    </div>
+                    <div id="historyList" class="space-y-4 max-h-96 overflow-y-auto pr-4 scrollbar-hide">
+                        <!-- History Items -->
+                        <div class="p-4 bg-white/5 rounded-2xl border border-white/5 opacity-50 italic text-sm text-center">
+                            No recent audits. Sign in to sync history.
+                        </div>
+                    </div>
+                </div>
+                <div class="glass p-10 rounded-[40px] bg-blue-500/5 border-blue-500/10 space-y-6">
+                    <div class="flex items-center space-x-3 text-blue-400">
+                        <i data-lucide="cloud" class="w-6 h-6"></i>
+                        <h4 class="text-xs font-bold uppercase tracking-widest">Enterprise Sync</h4>
+                    </div>
+                    <p class="text-sm text-slate-400 leading-relaxed italic">
+                        Encryption enabled. All logs are synced to private Google Cloud Storage partitions.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Main Audit Deck -->
+            <div class="lg:col-span-8 space-y-12">
+                <div class="glass p-12 rounded-[50px] space-y-10 reveal border-white/10 relative overflow-hidden">
+                    <!-- Drop Zone -->
+                    <div id="dropZone" class="border-2 border-dashed border-white/10 rounded-[40px] p-24 text-center cursor-pointer hover:border-blue-500 transition-all group active:scale-95">
+                        <div class="w-24 h-24 bg-blue-500/10 rounded-[32px] flex items-center justify-center mx-auto mb-8 group-hover:scale-110 transition-transform">
+                            <i data-lucide="upload-cloud" class="w-12 h-12 text-blue-400"></i>
+                        </div>
+                        <div class="space-y-2">
+                            <p id="fileNameDisplay" class="text-3xl font-black text-slate-300">Drop Audit Data</p>
+                            <p class="text-slate-500 uppercase tracking-widest text-xs font-bold">Standardized ML decision logs (.csv)</p>
+                        </div>
+                        <input type="file" id="fileInput" accept=".csv" class="hidden">
+                    </div>
+
+                    <button onclick="startStoryMode()" id="analyzeBtn" class="btn-glow w-full py-8 rounded-[40px] font-black text-3xl flex items-center justify-center space-x-4">
+                        <span>Begin Forensic Audit</span>
+                        <i data-lucide="zap" class="w-8 h-8"></i>
+                    </button>
+                </div>
+
+                <!-- Story Mode Modal / Result Reveal -->
+                <div id="storyDeck" class="hidden glass p-16 rounded-[60px] space-y-16 reveal relative">
+                    <div class="absolute top-10 right-10 flex space-x-4">
+                        <button onclick="downloadReport()" class="p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5 flex items-center space-x-2">
+                            <i data-lucide="download" class="w-5 h-5 text-blue-400"></i>
+                            <span class="text-xs font-bold">PDF Report</span>
+                        </button>
+                    </div>
+
+                    <!-- Step 1: Synthesis -->
+                    <div id="step-1" class="story-step active space-y-8">
+                        <div class="flex items-center space-x-6">
+                            <div class="w-20 h-20 bg-blue-500/10 rounded-3xl flex items-center justify-center animate-pulse">
+                                <i data-lucide="database" class="w-10 h-10 text-blue-400"></i>
+                            </div>
+                            <h3 class="text-5xl font-black">Synthesis Complete.</h3>
+                        </div>
+                        <p class="text-2xl text-slate-400 italic leading-relaxed" id="summaryText">
+                            The engine has ingested 10,000+ data points. Deep forensic analysis of the decision vectors has uncovered a pattern that demands your immediate attention...
+                        </p>
+                        <button onclick="nextStep(2)" class="text-blue-400 font-bold flex items-center space-x-2 text-xl hover:translate-x-2 transition-transform">
+                            <span>Reveal Findings</span>
+                            <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+
+                    <!-- Step 2: The Truth -->
+                    <div id="step-2" class="story-step space-y-12">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                            <div class="space-y-6">
+                                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Global Fairness Verdict</p>
+                                <h1 id="severityReveal" class="text-7xl font-black">---</h1>
+                                <p id="verdictNarrative" class="text-xl text-slate-400 italic pr-10"></p>
+                            </div>
+                            <div class="flex items-center justify-center relative">
+                                <canvas id="gaugeChart" class="w-full"></canvas>
+                                <div id="gaugeLabel" class="absolute top-1/2 left-1/2 -translate-x-1/2 text-4xl font-black">0.00</div>
+                            </div>
+                        </div>
+                        <button onclick="nextStep(3)" class="text-purple-400 font-bold flex items-center space-x-2 text-xl hover:translate-x-2 transition-transform">
+                            <span>Sector Impact</span>
+                            <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+
+                    <!-- Step 3: Impact Visualization -->
+                    <div id="step-3" class="story-step space-y-12">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                            <div class="lg:col-span-8 flex flex-col justify-center space-y-8">
+                                <h2 class="text-5xl font-black">The Humanity <br/><span class="text-rose-500">Behind the Data.</span></h2>
+                                <div id="aiInsightReveal" class="text-xl text-slate-300 leading-relaxed italic border-l-4 border-rose-500 pl-8 py-4 bg-rose-500/5 rounded-r-3xl">
+                                    "This isn't just about numbers; it's about the families being denied opportunity by a silent algorithm..."
+                                </div>
+                            </div>
+                            <div class="lg:col-span-4 space-y-6">
+                                <div class="glass p-8 rounded-3xl bg-white/5 space-y-4">
+                                    <h4 class="text-xs font-bold uppercase text-slate-500">Rate Disparity</h4>
+                                    <div class="h-48"><canvas id="barChart"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="location.reload()" class="btn-glow px-12 py-5 rounded-full font-black text-xl">Reset Audit Workspace</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="min-h-screen flex flex-col items-center justify-center text-center px-10 space-y-16 reveal">
+        <div class="space-y-6">
+            <h2 class="text-6xl md:text-8xl font-black tracking-tightest">Ready to build<br/><span class="hero-title-gradient italic">Ethical AI?</span></h2>
+            <p class="text-slate-500 text-xl max-w-2xl mx-auto font-medium">Join the world's most innovative teams using BiasGuard to protect their users and their brand.</p>
+        </div>
+        
+        <button id="partnerBtn" onclick="sendPartnerRequest()" class="btn-glow px-16 py-8 rounded-[40px] text-2xl font-black transition-all hover:scale-105 active:scale-95">
+            Partner with BiasGuard
+        </button>
+    </section>
+
+    <!-- Success Toast -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 glass px-10 py-5 rounded-[32px] z-[100] translate-y-40 opacity-0 transition-all duration-700 flex items-center space-x-4 border-emerald-500/20">
+        <div class="w-10 h-10 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
+            <i data-lucide="check" class="text-emerald-500 w-6 h-6"></i>
+        </div>
+        <div>
+            <p class="text-sm font-black text-white">Partnership Intent Sent</p>
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Our team will contact you shortly.</p>
+        </div>
+    </div>
+
+    <footer class="py-20 text-center border-t border-white/5 italic text-slate-600 text-sm tracking-widest font-bold uppercase">
+        BiasGuard AI v4.0 &bull; Built for Google Solution Challenge 2024
+    </footer>
+
+    <script>
+        lucide.createIcons();
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const storyDeck = document.getElementById('storyDeck');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+
+        let auditData = null;
+        let charts = {};
+
+        // Reveal Logic
+        const observer = new IntersectionObserver(e => e.forEach(entry => entry.isIntersecting && entry.target.classList.add('active')), {threshold: 0.1});
+        document.querySelectorAll('.reveal').forEach(r => observer.observe(r));
+
+        dropZone.onclick = () => fileInput.click();
+        fileInput.onchange = (e) => {
+            if (e.target.files[0]) {
+                fileNameDisplay.textContent = e.target.files[0].name;
+                fileNameDisplay.classList.add('text-blue-400');
+            }
+        };
+
+        async function startStoryMode() {
+            const file = fileInput.files[0];
+            if (!file) return alert("Please select an audit dataset.");
+
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = `<i data-lucide="loader-2" class="w-8 h-8 animate-spin"></i><span>Synthesizing Forensic Logic...</span>`;
+            lucide.createIcons();
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/', { method: 'POST', body: formData });
+                auditData = await response.json();
+                
+                // Transition to Story Deck
+                document.getElementById('demo').scrollIntoView({behavior:'smooth'});
+                setTimeout(() => {
+                    storyDeck.classList.remove('hidden');
+                    document.getElementById('dropZone').parentElement.classList.add('hidden');
+                    renderForensicCharts(auditData);
+                }, 800);
+            } catch (err) { alert("Forensic Suite Failure."); location.reload(); }
+        }
+
+        function nextStep(step) {
+            document.querySelectorAll('.story-step').forEach(s => s.classList.remove('active'));
+            document.getElementById(`step-${step}`).classList.add('active');
+            
+            if (step === 2) {
+                const reveal = document.getElementById('severityReveal');
+                reveal.textContent = auditData.severity;
+                reveal.className = `text-7xl font-black ${auditData.severity === 'CRITICAL' ? 'text-rose-500' : 'text-emerald-500'}`;
+                document.getElementById('verdictNarrative').textContent = `Our algorithmic forensic audit has calculated a disparate impact ratio of ${auditData.ratio.toFixed(2)}. This signals a ${auditData.severity.toLowerCase()} integrity failure in your current model.`;
+            }
+
+            if (step === 3) {
+                document.getElementById('aiInsightReveal').textContent = `"${auditData.ai_insight}"`;
+            }
+        }
+
+        function renderForensicCharts(data) {
+            Object.values(charts).forEach(c => c.destroy());
+            
+            const common = { 
+                responsive: true, maintainAspectRatio: false, 
+                animation: { duration: 3000, easing: 'easeOutElastic' },
+                plugins: { legend: { display: false } }
+            };
+
+            // Gauge
+            document.getElementById('gaugeLabel').innerText = data.ratio.toFixed(2);
+            charts.gauge = new Chart(document.getElementById('gaugeChart'), {
+                type: 'doughnut',
+                data: { datasets: [{ data: [data.ratio, 1 - data.ratio], backgroundColor: [data.ratio < 0.8 ? '#f43f5e' : '#10b981', '#1e293b'], circumference: 180, rotation: 270, borderWidth: 0, cutout: '85%' }] },
+                options: common
+            });
+
+            // Bar
+            charts.bar = new Chart(document.getElementById('barChart'), {
+                type: 'bar',
+                data: { labels: ['Male', 'Female'], datasets: [{ data: [data.male_rate, data.female_rate], backgroundColor: ['#3b82f6', '#c084fc'], borderRadius: 12 }] },
+                options: { ...common, scales: { y: { display: false, max: 1 }, x: { grid: { display: false }, ticks: { color: '#64748b' } } } }
+            });
+        }
+
+        function downloadReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(24);
+            doc.text("BIASGUARD AI | FORENSIC AUDIT", 20, 30);
+            doc.setFontSize(14);
+            doc.text(`Severity: ${auditData.severity}`, 20, 50);
+            doc.text(`Fairness Ratio: ${auditData.ratio.toFixed(2)}`, 20, 60);
+            doc.text("--------------------------------------------------", 20, 70);
+            doc.setFont("helvetica", "italic");
+            doc.text(auditData.ai_insight.substring(0, 500), 20, 90, { maxWidth: 170 });
+            doc.save(`BiasGuard_Audit_${Date.now()}.pdf`);
+        }
+
+        async function sendPartnerRequest() {
+            const btn = document.getElementById('partnerBtn');
+            const toast = document.getElementById('toast');
+            
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-6 h-6 animate-spin mr-3"></i><span>Sending Intent...</span>`;
+            lucide.createIcons();
+
+            try {
+                const res = await fetch('/partner', { method: 'POST' });
+                if (res.ok) {
+                    toast.classList.remove('translate-y-40', 'opacity-0');
+                    btn.innerHTML = `<i data-lucide="check" class="w-6 h-6 mr-3"></i><span>Proposal Logged</span>`;
+                    setTimeout(() => toast.classList.add('translate-y-40', 'opacity-0'), 4000);
+                } else {
+                    window.location.href = '/login';
+                }
+            } catch (err) { alert("Partnership Engine Error."); btn.disabled = false; }
+            lucide.createIcons();
+        }
+
+        // Particle System
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+        window.onresize = resize; resize();
+
+        class P {
+            constructor() { 
+                this.x = Math.random()*canvas.width; 
+                this.y = Math.random()*canvas.height; 
+                this.vx = Math.random()*0.4-0.2; 
+                this.vy = Math.random()*0.4-0.2; 
+                this.s = Math.random()*2;
+            }
+            u() { this.x+=this.vx; this.y+=this.vy; if(this.x>canvas.width)this.x=0; if(this.y>canvas.height)this.y=0; }
+            d() { ctx.fillStyle='rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.arc(this.x,this.y,this.s,0,6.28); ctx.fill(); }
+        }
+        for(let i=0;i<100;i++)particles.push(new P());
+        const anim = () => { ctx.clearRect(0,0,canvas.width,canvas.height); particles.forEach(p=>{p.u();p.d();}); requestAnimationFrame(anim); };
+        anim();
+    </script>
+</body>
+</html>

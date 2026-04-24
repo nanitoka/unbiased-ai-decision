@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit History | BiasGuard AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: #fff; }
+        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .card-hover:hover { transform: translateY(-5px); border-color: rgba(59, 130, 246, 0.3); background: rgba(255, 255, 255, 0.04); }
+        .transition-all { transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeIn { animation: fadeIn 0.8s cubic-bezier(0.23, 1, 0.32, 1); }
+    </style>
+</head>
+<body class="p-10">
+    <!-- Header -->
+    <header class="max-w-7xl mx-auto mb-16 flex justify-between items-end">
+        <div>
+            <a href="/" class="text-blue-400 text-sm font-bold flex items-center space-x-2 mb-4 hover:-translate-x-2 transition-all">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                <span>Back to Studio</span>
+            </a>
+            <h1 class="text-6xl font-black tracking-tightest">Audit <span class="text-blue-400">Registry.</span></h1>
+        </div>
+        <div class="flex items-center space-x-8">
+            <img src="{{ url_for('static', filename='img/heartbeat_visual.png') }}" class="w-24 h-24 rounded-2xl border border-white/5 opacity-50 hover:opacity-100 transition-opacity" alt="System Heartbeat">
+            <div class="text-right">
+                <p class="text-slate-500 font-bold uppercase tracking-widest text-xs">Total Forensics</p>
+                <p class="text-5xl font-black">{{ stats.total }}</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <div class="max-w-7xl mx-auto mb-12 flex space-x-8 border-b border-white/5">
+        <button onclick="switchTab('analytics')" id="tab-analytics" class="tab-btn pb-4 px-2 text-sm font-black uppercase tracking-widest text-blue-400 border-b-2 border-blue-400 transition-all">
+            <i data-lucide="line-chart" class="w-4 h-4 inline-block mr-2"></i>Analytics Dashboard
+        </button>
+        <button onclick="switchTab('ledger')" id="tab-ledger" class="tab-btn pb-4 px-2 text-sm font-black uppercase tracking-widest text-slate-500 hover:text-white transition-all">
+            <i data-lucide="database" class="w-4 h-4 inline-block mr-2"></i>Forensic Ledger
+        </button>
+    </div>
+
+    <!-- Analytics Dashboard View -->
+    <div id="view-analytics" class="tab-view animate-fadeIn">
+        <!-- Stats Grid -->
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            <div class="glass p-8 rounded-[32px] space-y-2 translate-y-0 hover:-translate-y-2 transition-all">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Avg Fairness Ratio</p>
+                <p class="text-4xl font-black text-blue-400">{{ stats.avg_bias }}</p>
+                <div class="h-1 w-full bg-blue-500/20 rounded-full mt-4"><div class="h-full bg-blue-500" style="width: {{ stats.avg_bias * 100 }}%"></div></div>
+            </div>
+            <div class="glass p-8 rounded-[32px] space-y-2 border-rose-500/20 translate-y-0 hover:-translate-y-2 transition-all">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Critical Violations</p>
+                <p class="text-4xl font-black text-rose-500">{{ stats.critical_count }}</p>
+                <p class="text-[10px] font-bold text-rose-500/50 uppercase tracking-widest">Immediate action required</p>
+            </div>
+            <div class="glass p-8 rounded-[32px] space-y-2 translate-y-0 hover:-translate-y-2 transition-all">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">System Integrity</p>
+                <p class="text-4xl font-black text-emerald-500">98.2%</p>
+                <p class="text-[10px] font-bold text-emerald-500/50 uppercase tracking-widest">Neural weights stable</p>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+            <div class="lg:col-span-2 glass p-10 rounded-[40px] space-y-6 relative overflow-hidden">
+                <h3 class="text-sm font-black uppercase tracking-widest">Historical Fairness Trend</h3>
+                <div class="h-64"><canvas id="trendChart"></canvas></div>
+            </div>
+            <div class="glass p-10 rounded-[40px] space-y-6 flex flex-col justify-between">
+                <h3 class="text-sm font-black uppercase tracking-widest">Integrity Distribution</h3>
+                <div class="relative h-48 w-48 mx-auto">
+                    <canvas id="pieChart"></canvas>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <p class="text-xs font-bold text-slate-500">Total</p>
+                        <p class="text-2xl font-black">{{ stats.total }}</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-widest"><span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span> Safe</span><span id="safeLabel">0</span></div>
+                    <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-widest"><span class="flex items-center"><span class="w-2 h-2 rounded-full bg-rose-500 mr-2"></span> Critical</span><span id="criticalLabel">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ledger View -->
+    <div id="view-ledger" class="tab-view hidden animate-fadeIn">
+        <!-- Controls -->
+        <div class="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row gap-6 justify-between items-center">
+            <div class="relative w-full md:w-96">
+                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                <input type="text" id="searchInput" placeholder="Search by filename or severity..." 
+                       class="glass w-full pl-12 pr-6 py-4 rounded-2xl focus:outline-none focus:border-blue-500/50 transition-all text-sm">
+            </div>
+            <div class="flex space-x-4">
+                <button onclick="filterBy('CRITICAL')" class="glass px-6 py-3 rounded-xl text-xs font-bold hover:bg-rose-500/10 hover:text-rose-400 transition-all">Critical Only</button>
+                <button onclick="window.location.reload()" class="glass px-6 py-3 rounded-xl text-xs font-bold hover:bg-blue-500/10 hover:text-blue-400 transition-all">Clear Filters</button>
+            </div>
+        </div>
+
+    <!-- History Grid -->
+    <div id="historyGrid" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {% for item in history %}
+        <div class="history-card glass p-8 rounded-[40px] card-hover transition-all flex flex-col justify-between space-y-8 relative group" data-severity="{{ item.severity }}" data-filename="{{ item.filename }}">
+            <div class="flex justify-between items-start">
+                <div class="space-y-1">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">{{ item.timestamp }}</p>
+                    <h3 class="text-2xl font-black tracking-tight truncate w-64">{{ item.filename }}</h3>
+                </div>
+                <div class="flex flex-col items-end space-y-3">
+                    <span class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter 
+                        {% if item.severity == 'CRITICAL' %} bg-rose-500/10 text-rose-500 {% elif item.severity == 'WARNING' %} bg-amber-500/10 text-amber-500 {% else %} bg-emerald-500/10 text-emerald-500 {% endif %}">
+                        {{ item.severity }}
+                    </span>
+                    <button onclick="deleteAudit({{ item.id }})" class="opacity-0 group-hover:opacity-100 transition-all text-rose-500 hover:scale-110">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-6 py-6 border-y border-white/5">
+                <div>
+                    <p class="text-[9px] font-bold text-slate-500 uppercase mb-1">Male Rate</p>
+                    <p class="text-xl font-bold">{{ (item.male_rate * 100)|round(1) }}%</p>
+                </div>
+                <div>
+                    <p class="text-[9px] font-bold text-slate-500 uppercase mb-1">Female Rate</p>
+                    <p class="text-xl font-bold">{{ (item.female_rate * 100)|round(1) }}%</p>
+                </div>
+                <div>
+                    <p class="text-[9px] font-bold text-slate-500 uppercase mb-1">Impact Ratio</p>
+                    <p class="text-xl font-black text-blue-400">{{ item.ratio|round(2) }}</p>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center">
+                <button onclick='showDetails({{ item | tojson }})' class="text-xs font-extrabold flex items-center space-x-2 text-slate-300 hover:text-white transition-colors">
+                    <span>View Full Forensic Deck</span>
+                    <i data-lucide="maximize-2" class="w-3 h-3"></i>
+                </button>
+                <div class="flex space-x-2">
+                    <button class="p-2 glass rounded-lg hover:bg-white/10 transition-all"><i data-lucide="download" class="w-4 h-4 text-slate-400"></i></button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Empty State -->
+    {% if not history %}
+    <div class="max-w-7xl mx-auto py-40 text-center space-y-6">
+        <div class="w-24 h-24 glass rounded-[32px] flex items-center justify-center mx-auto mb-8 opacity-20">
+            <i data-lucide="database-zap" class="w-12 h-12"></i>
+        </div>
+        <h2 class="text-4xl font-black opacity-30">Registry Empty.</h2>
+        <p class="text-slate-600 font-bold uppercase tracking-[0.4em] text-xs">Run your first forensic audit to populate the records.</p>
+    </div>
+    {% endif %}
+
+    <!-- Details Modal -->
+    <div id="detailsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-10 bg-black/80 backdrop-blur-md">
+        <div class="glass max-w-4xl w-full p-16 rounded-[60px] relative space-y-10 animate-scaleUp">
+            <button onclick="closeModal()" class="absolute top-10 right-10 p-4 glass rounded-3xl hover:bg-white/10 transition-all">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <div id="modalContent" class="space-y-8">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        
+        function switchTab(tab) {
+            // Views
+            document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            
+            // Buttons
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('text-blue-400', 'border-b-2', 'border-blue-400');
+                b.classList.add('text-slate-500');
+            });
+            const activeBtn = document.getElementById(`tab-${tab}`);
+            activeBtn.classList.add('text-blue-400', 'border-b-2', 'border-blue-400');
+            activeBtn.classList.remove('text-slate-500');
+            lucide.createIcons();
+        }
+
+        // --- DASHBOARD CHARTS ---
+        const historyData = {{ history | tojson }};
+        const safeCount = historyData.filter(d => d.severity === 'SAFE').length;
+        const warningCount = historyData.filter(d => d.severity === 'WARNING').length;
+        const criticalCount = historyData.filter(d => d.severity === 'CRITICAL').length;
+
+        document.getElementById('safeLabel').innerText = safeCount;
+        document.getElementById('criticalLabel').innerText = criticalCount;
+
+        const chartCommon = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            animation: { duration: 2500, easing: 'easeOutElastic' }
+        };
+
+        // Distribution Pie
+        new Chart(document.getElementById('pieChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Safe', 'Warning', 'Critical'],
+                datasets: [{
+                    data: [safeCount, warningCount, criticalCount],
+                    backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'],
+                    borderWidth: 0,
+                    cutout: '80%'
+                }]
+            },
+            options: chartCommon
+        });
+
+        // Trend Line
+        const trendLabels = historyData.slice(0, 10).reverse().map(d => d.timestamp.split(' ')[0]);
+        const trendValues = historyData.slice(0, 10).reverse().map(d => d.ratio);
+
+        new Chart(document.getElementById('trendChart'), {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'Fairness Ratio',
+                    data: trendValues,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointBackgroundColor: '#3b82f6'
+                }]
+            },
+            options: {
+                ...chartCommon,
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#64748b' } },
+                    x: { grid: { display: false }, ticks: { color: '#64748b' } }
+                }
+            }
+        });
+
+        // Search & Filter
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            document.querySelectorAll('.history-card').forEach(card => {
+                const text = (card.dataset.filename + card.dataset.severity).toLowerCase();
+                card.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        });
+
+        function filterBy(sev) {
+            document.querySelectorAll('.history-card').forEach(card => {
+                card.style.display = card.dataset.severity === sev ? 'flex' : 'none';
+            });
+        }
+
+        async function deleteAudit(id) {
+            if (!confirm("Permanently purge this forensic record?")) return;
+            const res = await fetch(`/delete_history/${id}`, { method: 'POST' });
+            if (res.ok) window.location.reload();
+        }
+
+        function showDetails(data) {
+            const modal = document.getElementById('detailsModal');
+            const content = document.getElementById('modalContent');
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <span class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter bg-blue-500/10 text-blue-400">Forensic Detail v4.0</span>
+                    <h2 class="text-6xl font-black tracking-tightest leading-none">${data.filename}</h2>
+                    <p class="text-slate-400 text-xl italic leading-relaxed border-l-4 border-blue-500 pl-8">"${data.ai_insight}"</p>
+                    
+                    <div class="grid grid-cols-2 gap-10 mt-12 pt-10 border-t border-white/10">
+                        <div class="space-y-4">
+                            <h4 class="text-xs font-bold uppercase text-slate-500">Selection Parity</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-xs font-bold"><span class="text-slate-400">Male Group</span><span>${(data.male_rate * 100).toFixed(1)}%</span></div>
+                                <div class="w-full bg-white/5 rounded-full h-1.5 overflow-hidden"><div class="bg-blue-400 h-full" style="width: ${data.male_rate * 100}%"></div></div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-xs font-bold"><span class="text-slate-400">Female Group</span><span>${(data.female_rate * 100).toFixed(1)}%</span></div>
+                                <div class="w-full bg-white/5 rounded-full h-1.5 overflow-hidden"><div class="bg-purple-400 h-full" style="width: ${data.female_rate * 100}%"></div></div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col justify-center items-center glass rounded-3xl p-8">
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Disparate Impact</p>
+                            <p class="text-7xl font-black ${data.ratio < 0.8 ? 'text-rose-500' : 'text-emerald-500'}">${data.ratio.toFixed(2)}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeModal() { document.getElementById('detailsModal').classList.add('hidden'); }
+    </script>
+</body>
+</html>

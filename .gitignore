@@ -1,0 +1,77 @@
+# -----------------------------
+# 🐍 Python
+# -----------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+env/
+venv/
+ENV/
+.env
+
+# -----------------------------
+# 🌐 Flask / App
+# -----------------------------
+instance/
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# -----------------------------
+# 🗄️ Data & Uploads
+# -----------------------------
+*.db
+*.sqlite3
+data/*.db
+data/uploads/
+static/uploads/
+uploads/
+
+# -----------------------------
+# 📦 Build / Distribution
+# -----------------------------
+build/
+dist/
+*.egg-info/
+
+# -----------------------------
+# 💻 OS Files
+# -----------------------------
+.DS_Store
+Thumbs.db
+
+# -----------------------------
+# 🧑‍💻 IDE / Editor
+# -----------------------------
+.vscode/
+.idea/
+*.swp
+
+# -----------------------------
+# ☁️ Google Cloud / Secrets
+# -----------------------------
+credentials.json
+service-account.json
+*.pem
+*.key
+
+# -----------------------------
+# 🔐 Environment Variables
+# -----------------------------
+.env.local
+.env.production
+.env.development
+
+# -----------------------------
+# 📊 Jupyter (if used later)
+# -----------------------------
+.ipynb_checkpoints/
+
+# -----------------------------
+# 🧪 Temporary Files
+# -----------------------------
+*.tmp
+*.bak
